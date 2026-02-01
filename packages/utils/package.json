@@ -1,0 +1,10 @@
+{
+  "name": "@agendamento/utils",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "date-fns": "^3.0.0",
+    "date-fns-tz": "^2.0.0"
+  }
+}

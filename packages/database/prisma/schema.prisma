@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== MULTI-TENANT ====================
+
+model Tenant {
+  id            String   @id @default(uuid())
+  name          String
+  subdomain     String   @unique
+  plan          String   @default("basic") // basic, premium, enterprise
+  isActive      Boolean  @default(true)
+  maxUsers      Int      @default(5)
+  maxAppointments Int    @default(100)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  services      Service[]
+  appointments  Appointment[]
+  customers     Customer[]
+  settings      TenantSettings?
+
+  @@map("tenants")
+}
+
+model TenantSettings {
+  id                String   @id @default(uuid())
+  tenantId          String   @unique
+
+  businessHours     Json     // { monday: { open: "09:00", close: "18:00" }, ... }
+  timezone          String   @default("America/Sao_Paulo")
+  currency          String   @default("BRL")
+  language          String   @default("pt-BR")
+
+  // Configurações de agendamento
+  slotDuration      Int      @default(30) // minutos
+  bufferTime        Int      @default(0)  // tempo entre agendamentos
+  advanceBookingDays Int     @default(30) // quantos dias no futuro aceita agendamento
+
+  // Notificações
+  emailNotifications Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+  pushNotifications  Boolean  @default(true)
+
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+// ==================== USERS & AUTH ====================
+
+model User {
+  id          String   @id @default(uuid())
+  email       String
+  name        String
+  password    String
+  role        String   @default("STAFF") // OWNER, ADMIN, STAFF
+  isActive    Boolean  @default(true)
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  appointments Appointment[] @relation("StaffAppointments")
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+// ==================== SERVICES ====================
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  duration    Int      // em minutos
+  price       Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  category    String?  // Corte, Barba, Manicure, etc
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("services")
+}
+
+// ==================== CUSTOMERS ====================
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  phone       String
+  notes       String?  // Observações sobre o cliente
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  appointments Appointment[]
+
+  @@unique([phone, tenantId])
+  @@index([tenantId])
+  @@index([phone])
+  @@map("customers")
+}
+
+// ==================== APPOINTMENTS ====================
+
+model Appointment {
+  id          String   @id @default(uuid())
+
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  staffId     String?
+  staff       User?    @relation("StaffAppointments", fields: [staffId], references: [id], onDelete: SetNull)
+
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW
+
+  notes       String?  // Observações do agendamento
+  cancelReason String? // Motivo do cancelamento
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, startTime])
+  @@index([tenantId, status])
+  @@index([customerId])
+  @@index([staffId])
+  @@map("appointments")
+}

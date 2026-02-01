@@ -1,0 +1,29 @@
+{
+  "name": "agendamento-saas",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "cd packages/database && pnpm prisma generate",
+    "db:migrate": "cd packages/database && pnpm prisma migrate dev",
+    "db:studio": "cd packages/database && pnpm prisma studio",
+    "db:seed": "cd packages/database && pnpm prisma db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.3.0",
+    "@turbo/gen": "^2.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

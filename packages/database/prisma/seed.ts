@@ -1,5 +1,5 @@
 import { PrismaClient } from '../generated/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +10,7 @@ async function main() {
   const tenant = await prisma.tenant.create({
     data: {
       name: 'Barbearia do João',
+      slug: 'joao',
       subdomain: 'joao',
       plan: 'premium',
       isActive: true,

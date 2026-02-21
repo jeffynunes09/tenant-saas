@@ -13,6 +13,7 @@ datasource db {
 model Tenant {
   id            String   @id @default(uuid())
   name          String
+  slug          String   @unique
   subdomain     String   @unique
   plan          String   @default("basic") // basic, premium, enterprise
   isActive      Boolean  @default(true)
